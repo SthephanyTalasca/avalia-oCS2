@@ -258,35 +258,91 @@
                 }
 
                 const evaluationPrompt = `
-                    Você é um avaliador sênior de Customer Experience, especializado em produtos de software para contabilidade. A sua tarefa é analisar a performance do CS, cujo nome é "${csName}", com base na transcrição da reunião abaixo.
+                    Você é um avaliador sênior de Customer Experience, especialista em software contábil. Sua tarefa é analisar a performance do CS, "${csName}", com base na transcrição da reunião.
 
                     **FONTES DE CONHECIMENTO:**
-                    - **Principal:** Use o conteúdo geral da Central de Ajuda da Nibo como a fonte primária da verdade: https://ajuda.nibo.com.br/pt-BR/
-                    - **Produtos Adicionais para Oportunidades:**
-                        - GF: https://ajuda.nibo.com.br/pt-BR/?q=GF
-                        - COF: https://ajuda.nibo.com.br/pt-BR/?q=CONCILIADOR
-                        - WHATSAPP: https://ajuda.nibo.com.br/pt-BR/?q=WHATSAPP
-                        - NIBO EMISSOR: https://ajuda.nibo.com.br/pt-BR/?q=NIBO+EMISSOR
+                    - **Fontes Adicionais para analisar contorno de objeções:**
+                        - As Armas da Persuasão (princípios de Cialdini)
+                        - Como Fazer Amigos e Influenciar Pessoas (princípios de Carnegie)
+                        - Manual de Persuasão do FBI (técnicas de rapport e negociação)
+                        - Como Chegar ao Sim (negociação baseada em interesses)
 
-                    **INSTRUÇÕES DETALHADAS:**
-                    1.  **Análise de Habilidades e Nota Geral:**
-                        - Avalie o CS em CADA um dos 14 critérios listados. Atribua uma nota de 1 a 10.
-                        - **Justificativa Específica:** Para cada critério, se a nota não for 10, explique especificamente o que faltou para a nota máxima.
-                        - **Problemas Técnicos:** Se ocorrer um problema técnico (ex: sistema lento, queda de conexão), não penalize a nota de "Domínio de Produto". Em vez disso, avalie como o CS lidou com a situação nos critérios "Postura" e "Flexibilidade".
-                        - **Foco em Encantamento:** A nota de 'Encantamento' deve considerar tanto a percepção de valor expressa pelo cliente (se o cliente diz que viu valor, a nota do CS pode ser 10) quanto o esforço do CS em demonstrar valor com exemplos práticos e personalizados para o dia a dia do cliente.
-                        - **Verificação de Precisão:** Verifique se as explicações do CS sobre o produto estão corretas de acordo com a Central de Ajuda.
-                        - **Calcular Nota Geral:** Calcule a média de todas as 14 notas para gerar uma "notaGeral".
-                    2.  **REGRA ESPECIAL:** Se para um critério específico não houver evidências claras na transcrição para fazer uma avaliação (positiva ou negativa), **atribua a nota máxima (10)** e justifique brevemente mencionando a ausência de evidências.
-                    3.  **Análise de Perfil do Contador:** Identifique o perfil comportamental do contador (ex: analítico, apressado, cético, colaborativo). Descreva como o CS lidou com esse perfil e, em seguida, ofereça sugestões sobre como o CS poderia ter adaptado melhor a sua comunicação ou abordagem.
-                    4.  **Análise de Fala:** Sua tarefa é calcular a distribuição de fala. Analise a transcrição linha por linha. Atribua cada linha ao 'CS' (procurando por marcadores como 'CS:', o nome "${csName}:") ou ao 'Cliente'. Se uma linha não puder ser atribuída com certeza a nenhum dos dois, ignore-a na contagem. Some o total de palavras para todas as linhas atribuídas ao CS e ao Cliente. Calcule a percentagem de cada um em relação ao total de palavras contadas. Se for impossível distinguir os locutores, retorne os valores para "cs" e "client" como 0.
-                    5.  **Alerta de Cancelamento:** Analise a transcrição em busca de sinais de insatisfação do cliente. Se um risco for detectado, defina "risk" como true e descreva o motivo. Caso contrário, defina "risk" como false.
-                    6.  **Ponto Alto da Reunião:** Identifique e descreva o momento mais positivo da conversa.
-                    7.  **Oportunidades de Venda:** Identifique oportunidades para os produtos adicionais (GF, COF, WHATSAPP, NIBO EMISSOR) **apenas se o cliente mencionar explicitamente uma dor, um problema ou uma necessidade direta** que um desses produtos resolve. Se nenhuma necessidade explícita for mencionada, retorne uma lista vazia.
-                    8.  **Resumo e Plano de Ação:** Crie um resumo geral da performance. Em seguida, crie uma lista de 'Erros Específicos', detalhando o que o CS errou e o que deveria ter feito. Por fim, liste 'Sugestões de Melhoria' práticas.
-                    9.  **Formato de Saída:** A sua resposta DEVE ser um único objeto JSON, com as chaves: "notaGeral", "evaluation", "speakingTime", "profileAnalysis", "summary", "cancellationAlert", "meetingHighlight", e "opportunities".
+                    **INSTRUÇÕES GERAIS:**
+                    1.  **Análise Detalhada:** Avalie o CS em CADA um dos 17 critérios abaixo. Para cada um, forneça uma **Nota (1–10)** e uma **Justificativa breve (1–2 frases)**.
+                    2.  **Regra de Evidência:** Para critérios subjetivos como 'Rapport' e 'Encantamento', se não houver nenhuma evidência positiva ou negativa na transcrição, a postura deve ser considerada passiva. Nestes casos, **atribua a nota 6 (Razoável)** e justifique que o CS não criou ativamente a conexão ou o momento de valor. Para outros critérios, se não houver evidência, pode atribuir nota maior se a ausência não indicar uma falha.
+                    3.  **Resumo Final:** Ao final, crie um resumo geral da performance e forneça sugestões práticas de melhoria.
+                    4.  **Formato de Saída:** A sua resposta DEVE ser um único objeto JSON.
 
-                    **CRITÉRIOS DE AVALIAÇÃO:**
-                    (Consultividade, Escuta Ativa, Jornada do Cliente, Encantamento, Objeções, Rapport, Autoridade, Postura, Gestão de Tempo, Contextualização, Clareza, Flexibilidade, Domínio de Produto, Compreensão do Ecossistema)
+                    ---
+                    **CRITÉRIOS DE AVALIAÇÃO DETALHADOS:**
+
+                    **Escala de Notas:**
+                    - **9–10 – Excelente:** Performance exemplar, superando as expectativas.
+                    - **7–8 – Muito bom:** Performance sólida, cumpriu bem o esperado.
+                    - **5–6 – Razoável:** Cumpriu o básico, mas com espaço claro para melhorias.
+                    - **3–4 – Fraco:** Falhas significativas na execução.
+                    - **1–2 – Insuficiente:** Performance muito abaixo do esperado.
+
+                    **Critério 1: Consultividade**
+                    - *Avalie (1–10) se o CS atuou como parceiro estratégico, oferecendo recomendações personalizadas e visão de futuro.*
+                    - 9–10: Postura plenamente consultiva, soluções muito alinhadas ao negócio, antecipação de oportunidades e riscos.
+                    - 7–8: Boas recomendações e adaptações, faltou um pouco de profundidade ou proatividade extra.
+                    - 5–6: Sugestões genéricas ou somente reativas; pouca antecipação.
+                    - 3–4: Explicou só a ferramenta; não contextualizou para o cliente.
+                    - 1–2: Postura passiva ou puramente técnica, sem recomendações estratégicas.
+
+                    **Critério 2: Escuta Ativa**
+                    - *Avalie (1–10) se o CS ouviu com atenção genuína, validou percepções e mostrou empatia.*
+                    - 9–10: Captou nuances, validou sentimentos e ajustou abordagem com empatia.
+                    - 7–8: Boa escuta e acolhimento, mas sem tanta profundidade nas entrelinhas.
+                    - 5–6: Ouviu e respondeu, porém de forma mais mecânica ou superficial.
+                    - 3–4: Respostas genéricas, interrupções ou pontos ignorados.
+                    - 1–2: Desatenção ou comportamento robótico, sem retorno às falas do cliente.
+
+                    **Critério 3: Jornada do Cliente**
+                    - *Avalie (1–10) se o CS esclareceu a fase atual da implementação e próximos passos.*
+                    - 9–10: Explicou claramente fases, responsabilidades e prazos, checando entendimento e dúvidas.
+                    - 7–8: Bom detalhamento, mas faltou confirmação de dúvidas ou prazo concreto.
+                    - 5–6: Mencionou etapas, mas de forma superficial ou sem checagem de entendimento.
+                    - 3–4: Falta de clareza na jornada, ou apenas roteiro genérico.
+                    - 1–2: Não deixou claro em que estágio está e o que vem a seguir.
+
+                    **Critério 4: Encantamento**
+                    - *Avalie (1–10) o esforço para gerar valor e surpreender o cliente.*
+                    - 9–10: Demonstração entusiasmada, personalizada e impactante do valor da ferramenta.
+                    - 7–8: Valor relevante e personalizado, com leve falta de entusiasmo ou profundidade.
+                    - 5–6: Benefícios apresentados, mas de modo genérico e pouco inspirador.
+                    - 3–4: Apresentação padrão, sem conexão emocional ou diferencial.
+                    - 1–2: Total ausência de encantamento; foco apenas em funcionalidades.
+
+                    **Critério 5: Objeções**
+                    - *Avalie (1–10) a capacidade de antecipar e contornar objeções com empatia e assertividade.*
+                    - 9–10: Antecipou dúvidas, respondeu com segurança e empatia, revertendo objeções em oportunidades.
+                    - 7–8: Boa reação a objeções, mas faltou proatividade total.
+                    - 5–6: Contornou apenas o que foi questionado; pouco além do esperado.
+                    - 3–4: Respostas evasivas ou superficiais às objeções.
+                    - 1–2: Ignorou ou não conseguiu contornar objeções.
+
+                    **Critério 6: Rapport**
+                    - *Avalie (1–10) o grau de conexão humana e empatia.*
+                    - 9–10: Ambiente leve e acolhedor, uso de nomes e interações espontâneas.
+                    - 7–8: Simpatia e empatia evidentes, mas sem elementos informais mais marcantes.
+                    - 5–6: Cordialidade básica, sem aprofundar vínculo.
+                    - 3–4: Formalidade excessiva; pouca conexão.
+                    - 1–2: Relação fria e impessoal.
+
+                    **Critério 7: Autoridade** - Avalie (1–10) a segurança e o ritmo de condução da reunião.
+                    **Critério 8: Postura** - Avalie (1–10) o profissionalismo e a maturidade diante de problemas.
+                    **Critério 9: Gestão de Tempo** - Avalie (1–10) a capacidade de cobrir os objetivos em ~1h.
+                    **Critério 10: Contextualização** - Avalie (1–10) o uso de exemplos práticos ao explicar telas e funcionalidades.
+                    **Critério 11: Clareza** - Avalie (1–10) a simplicidade e acessibilidade na comunicação.
+                    **Critério 12: Objetividade** - Avalie (1–10) a assertividade e foco nas respostas.
+                    **Critério 13: Flexibilidade** - Avalie (1–10) a adaptação do roteiro conforme prioridades do cliente.
+                    **Critério 14: Domínio de Produto** - Avalie (1–10) o conhecimento profundo do Nibo, respostas técnicas seguras.
+                    **Critério 15: Alinhamento ao Modelo de Negócio** - Avalie (1–10) se o CS entendeu o segmento e conectou à proposta de valor.
+                    **Critério 16: Ecossistema Nibo** - Avalie (1–10) o domínio do portfólio completo e integrações estratégicas.
+                    **Critério 17: Universo da Contabilidade** - Avalie (1–10) a familiaridade com processos contábeis e termos do contador.
+                    ---
 
                     **TRANSCRIÇÃO PARA ANÁLISE:**
                     ---
@@ -310,7 +366,7 @@
                 };
 
                 const payload = { contents: [{ role: "user", parts: [{ text: evaluationPrompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema } };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
                 const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 
@@ -343,14 +399,18 @@
             displayGeneralScore(data.notaGeral);
             displayCancellationAlert(data.cancellationAlert);
             
-            data.evaluation.sort((a, b) => b.nota - a.nota);
+            // Sort by criteria name for consistent radar chart order
+            const criteriaOrder = ["Consultividade", "Escuta Ativa", "Jornada do Cliente", "Encantamento", "Objeções", "Rapport", "Autoridade", "Postura", "Gestão de Tempo", "Contextualização", "Clareza", "Objetividade", "Flexibilidade", "Domínio de Produto", "Alinhamento ao Modelo de Negócio", "Ecossistema Nibo", "Universo da Contabilidade"];
+            data.evaluation.sort((a, b) => criteriaOrder.indexOf(a.criterio) - criteriaOrder.indexOf(b.criterio));
+
 
             detailedReport.innerHTML = '<h3 class="text-xl font-semibold mb-4 text-center lg:text-left">Avaliação Detalhada</h3>';
-            data.evaluation.forEach(item => {
+            const sortedForDisplay = [...data.evaluation].sort((a, b) => b.nota - a.nota); // Sort by score for display
+            sortedForDisplay.forEach(item => {
                 const reportItem = document.createElement('div');
                 reportItem.className = 'p-4 border border-gray-200 rounded-lg bg-gray-50';
                 
-                const scoreColor = item.nota >= 8 ? 'text-green-600' : item.nota >= 5 ? 'text-yellow-600' : 'text-red-600';
+                const scoreColor = item.nota >= 9 ? 'text-green-600' : item.nota >= 7 ? 'text-blue-600' : item.nota >= 5 ? 'text-yellow-600' : 'text-red-600';
 
                 reportItem.innerHTML = `
                     <div class="flex justify-between items-center">
@@ -384,11 +444,13 @@
 
         function displayGeneralScore(score) {
             if (score === null || isNaN(score)) return;
-            const scoreColor = score >= 8 ? 'text-green-600' : score >= 5 ? 'text-yellow-600' : 'text-red-600';
+            const scoreColor = score >= 9 ? 'text-green-600' : score >= 7 ? 'text-blue-600' : score >= 5 ? 'text-yellow-600' : 'text-red-600';
+            const scoreText = score >= 9 ? 'Excelente' : score >= 7 ? 'Muito Bom' : score >= 5 ? 'Razoável' : score >= 3 ? 'Fraco' : 'Insuficiente';
             generalScoreSection.innerHTML = `
                 <div class="text-center bg-gray-50 p-4 rounded-lg">
                     <h3 class="text-xl font-semibold text-primary">Nota Geral da Reunião</h3>
                     <p class="text-5xl font-bold ${scoreColor} mt-2">${score.toFixed(1)}</p>
+                    <p class="text-lg font-medium ${scoreColor} mt-1">${scoreText}</p>
                 </div>
             `;
         }
@@ -499,10 +561,10 @@
                     <h4 class="text-lg font-semibold mb-2 text-primary">Resumo da Performance</h4>
                     <p class="text-gray-700">${summaryData.geral}</p>
                     
-                    <h4 class="text-lg font-semibold mt-6 mb-3 text-primary">Erros Específicos</h4>
+                    <h4 class="text-lg font-semibold mt-6 mb-3 text-primary">Pontos a Melhorar</h4>
                     <ul class="space-y-2 text-gray-700">${errorsList}</ul>
 
-                    <h4 class="text-lg font-semibold mt-6 mb-3 text-primary">Sugestões de Melhoria</h4>
+                    <h4 class="text-lg font-semibold mt-6 mb-3 text-primary">Sugestões Práticas</h4>
                     <ul class="space-y-2 text-gray-700">${suggestionsList}</ul>
                 </div>
             `;
