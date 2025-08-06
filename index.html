@@ -137,7 +137,7 @@
     </div>
 
     <script>
-        const apiKey = "AIzaSyAH2RPUA6WLkg02xbgRlmLGwj_xa1IcyDA";
+        const apiKey = "YOUR_API_KEY_HERE"; // Chave da API fica aqui
 
         const csNameInput = document.getElementById('cs-name-input');
         const transcriptInput = document.getElementById('transcript-input');
@@ -163,6 +163,7 @@
         let radarChartInstance = null;
         let uploadedFiles = [];
 
+        // Add event listeners to UI elements
         csNameInput.addEventListener('input', checkAnalysisButtonState);
         transcriptInput.addEventListener('input', checkAnalysisButtonState);
         fileDropZone.addEventListener('click', () => fileInput.click());
@@ -178,6 +179,7 @@
              handleAnalysis();
         });
 
+        // Function to enable/disable the analysis button based on input
         function checkAnalysisButtonState() {
             const hasText = transcriptInput.value.trim().length > 0;
             const hasFiles = uploadedFiles.length > 0;
@@ -185,6 +187,7 @@
             analyzeBtn.disabled = !(hasCsName && (hasText || hasFiles));
         }
 
+        // Function to handle file uploads
         function handleFiles(files) {
             const newFiles = Array.from(files).filter(file => file.type === 'text/plain' || file.name.endsWith('.txt'));
             newFiles.forEach(newFile => {
@@ -196,6 +199,7 @@
             checkAnalysisButtonState();
         }
 
+        // Function to render the list of uploaded files
         function renderFileList() {
             fileList.innerHTML = '';
             if (uploadedFiles.length > 0) {
@@ -220,24 +224,28 @@
                 fileList.appendChild(list);
             }
         }
-
+        
+        // Function to fetch data from API with retry logic for handling server errors
         async function fetchWithRetry(url, options, retries = 3) {
             let delay = 2000;
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url, options);
-                    if (response.status !== 503) return response;
+                    if (response.status !== 503) return response; // Not a server overload, return response
                     loadingText.textContent = `Servidor sobrecarregado. A tentar novamente em ${delay / 1000}s... (${i + 1}/${retries})`;
                 } catch (error) {
                     console.error(`Fetch attempt ${i + 1} failed:`, error);
                 }
                 await new Promise(resolve => setTimeout(resolve, delay));
-                delay *= 2;
+                delay *= 2; // Exponential backoff
             }
             throw new Error(`O modelo continua sobrecarregado após ${retries} tentativas. Por favor, tente mais tarde.`);
         }
 
+
+        // Main function to handle the analysis process
         async function handleAnalysis() {
+            // Reset UI
             analysisResults.classList.add('hidden');
             errorMessage.classList.add('hidden');
             loadingSpinner.classList.remove('hidden');
@@ -257,45 +265,73 @@
                     throw new Error("Nenhum conteúdo de transcrição foi fornecido. Verifique os ficheiros ou o texto colado.");
                 }
 
+                // This is the detailed prompt that instructs the AI on how to perform the evaluation.
                 const evaluationPrompt = `
-                    Você é um avaliador sênior de Customer Experience, extremamente crítico e detalhista. Sua tarefa é analisar a performance do CS, "${csName}", com base na transcrição da reunião.
+                **MISSÃO PRINCIPAL:**
 
-                    **INSTRUÇÕES GERAIS E REGRAS:**
-                    1.  **Análise Detalhada:** Avalie o CS em CADA um dos 17 critérios abaixo.
-                    2.  **Cálculo da Nota Geral:** Calcule a média de todas as notas dos critérios. Se a nota de 'Objeções' for -1, exclua este critério do cálculo.
-                    3.  **REGRA PARA OBJEÇÕES:** Se a transcrição **não contiver nenhuma objeção**, dúvida significativa ou hesitação do cliente, a habilidade não pode ser avaliada. Neste caso, para o critério 'Objeções', **atribua a nota -1** e justifique que 'Nenhuma objeção foi apresentada para avaliação'.
-                    4.  **REGRA PARA CRITÉRIOS SUBJETIVOS (Rapport, Encantamento):** Se não houver evidência clara de uma ação proativa do CS para criar conexão ou gerar valor, **atribua a nota 6 (Razoável)**.
-                    5.  **PLANO DE AÇÃO OBRIGATÓRIO:** Analise criticamente. Para o campo "specificErrors", você **DEVE** identificar pelo menos 1 ou 2 pontos fracos ou oportunidades perdidas, mesmo que a reunião seja boa. Para "sugestoes", você **DEVE** fornecer pelo menos 2 sugestões práticas e acionáveis para corrigir esses pontos. Não deixe esses campos vazios.
-                    6.  **Formato de Saída:** A resposta DEVE ser um único objeto JSON.
+                Você é um especialista em Quality Assurance de Customer Experience, com um perfil extremamente crítico, rigoroso e detalhista. A sua única missão é analisar a transcrição de uma reunião entre um Customer Success (CS), "${csName}", e um cliente, avaliando a performance do CS com base nas regras e critérios invioláveis abaixo. A sua análise deve ser implacável, baseada apenas em evidências explícitas na transcrição.
 
-                    ---
-                    **CRITÉRIOS DE AVALIAÇÃO DETALHADOS:**
-                    **Escala de Notas:** 9–10: Excelente; 7–8: Muito bom; 5–6: Razoável; 3–4: Fraco; 1–2: Insuficiente.
-                    1. Consultividade: Atuou como parceiro estratégico?
-                    2. Escuta Ativa: Ouviu com atenção genuína?
-                    3. Jornada do Cliente: Esclareceu fase atual e próximos passos?
-                    4. Encantamento: Esforço para gerar valor e surpreender?
-                    5. Objeções: Capacidade de contornar objeções? (Lembre-se da regra da nota -1).
-                    6. Rapport: Grau de conexão humana?
-                    7. Autoridade: Segurança e ritmo de condução?
-                    8. Postura: Profissionalismo e maturidade?
-                    9. Gestão de Tempo: Cumpriu objetivos no tempo?
-                    10. Contextualização: Uso de exemplos práticos?
-                    11. Clareza: Simplicidade na comunicação?
-                    12. Objetividade: Assertividade nas respostas?
-                    13. Flexibilidade: Adaptação ao roteiro?
-                    14. Domínio de Produto: Conhecimento da ferramenta?
-                    15. Alinhamento ao Modelo de Negócio: Entendimento do segmento do cliente?
-                    16. Ecossistema Nibo: Domínio do portfólio completo?
-                    17. Universo da Contabilidade: Familiaridade com termos contábeis?
-                    ---
-                    **TRANSCRIÇÃO PARA ANÁLISE:**
-                    ---
-                    ${combinedTranscript}
-                    ---
+                ---
+
+                ### **FILOSOFIA DE AVALIAÇÃO E REGRAS MANDATÓRIAS (INVIOLÁVEIS):**
+
+                1.  **PRINCÍPIO "PROVE A COMPETÊNCIA" (PONTO DE PARTIDA = NOTA 1):** A avaliação de **CADA** critério começa, obrigatoriamente, com a **nota 1 (Ruim)**. Para que a nota aumente, você precisa encontrar **evidências claras, explícitas e proativas** de que a habilidade foi utilizada. A ausência de evidência é prova de incompetência no critério. Não há pontos por esforço ou por "não errar". A competência deve ser provada.
+
+                2.  **A ESCALA DA VERDADE (OBRIGATÓRIA):** A pontuação deve seguir estritamente esta escala:
+                    * **10 (Excelente):** Superou todas as expectativas de forma proativa, estratégica e memorável. Demonstrou maestria.
+                    * **8-9 (Cumpriu Quase Sempre):** Demonstrou a habilidade consistentemente, na grande maioria das oportunidades, com poucas falhas.
+                    * **6-7 (Fez o Básico):** Cumpriu o esperado de forma reativa. Uma performance correta, mas sem brilho, iniciativa ou personalização.
+                    * **4-5 (Cumpriu Pouco):** Demonstrou a habilidade de forma irregular e inconsistente. Mais falhas do que acertos.
+                    * **2-3 (Raramente Cumpriu):** Raras e fracas demonstrações da habilidade. Performance muito deficiente.
+                    * **0-1 (Ruim/Não Cumpriu):** Nenhuma ou pouquíssima evidência. (Nota padrão).
+
+                3.  **REGRA DA JUSTIFICATIVA "POR QUE NÃO 10?":** Para **TODO** critério que receber uma nota inferior a 10, a sua justificativa **DEVE** obrigatoriamente explicar o que faltou para atingir a nota máxima. Seja específico.
+                    * *Exemplo Ruim:* "O CS foi claro."
+                    * *Exemplo Bom (Nota 7):* "O CS foi claro na explicação inicial, mas não atingiu a nota máxima porque não utilizou analogias ou exemplos práticos para simplificar um tema complexo, nem validou o entendimento do cliente com perguntas."
+
+                4.  **REGRA DA EXCEÇÃO "OBJEÇÕES":** Se a transcrição **não contiver nenhuma objeção** explícita do cliente, o critério 'Objeções' **DEVE** receber a **nota -1** e a justificativa deve ser: "Não foram identificadas objeções claras por parte do cliente durante a transcrição da chamada. Portanto, este critério não é aplicável para avaliação."
+
+                5.  **REGRA "ENCANTAMENTO É INDEPENDENTE":** A avaliação do critério 'Encantamento' não deve ser impactada pela presença ou ausência de objeções. Avalie-o com base na capacidade do CS de criar momentos "uau" e superar as expectativas.
+
+                6.  **PONTO DE ATENÇÃO CRÍTICO "ESCUTA ATIVA":** Se o percentual de fala do CS for **superior a 70%**, isso é uma falha grave. A nota de 'Escuta Ativa' deve ser automaticamente baixa (entre 1 e 3) e este ponto **DEVE** ser mencionado como o primeiro item nos "Pontos a Melhorar" do plano de ação.
+
+                7.  **PLANO DE AÇÃO OBRIGATÓRIO:** A análise **DEVE** conter um plano de ação claro. Identifique, no mínimo, **2-3 pontos de melhoria** (erros específicos cometidos) e **2-3 sugestões práticas** (ações claras que o CS pode tomar para melhorar).
+
+                8.  **ANÁLISE DE PERFIL DE CLIENTE:** Analise a linguagem, o tom e as perguntas do cliente para criar um **perfil descritivo** (ex: "O Cético Sobrecarregado", "O Analítico Detalhista", "O Novato Ansioso"). Justifique por que você chegou a essa conclusão com base em evidências da transcrição e avalie como o CS lidou (ou falhou em lidar) com esse perfil específico.
+
+                9.  **FORMATO DE SAÍDA (MANDATÓRIO):** A resposta final **DEVE** ser um único e puro objeto JSON, sem nenhum texto, comentário ou formatação markdown antes ou depois dele.
+
+                ---
+
+                ### **CRITÉRIOS DE AVALIAÇÃO DETALHADOS:**
+
+                * **Consultividade:** O CS agiu como um parceiro estratégico ou apenas como um apresentador de software? Ele fez perguntas investigativas para diagnosticar as dores do cliente antes de apresentar soluções?
+                * **Escuta Ativa:** O CS demonstrou ouvir para entender, ou apenas para responder? Ele captou as entrelinhas e as preocupações não ditas? (Lembre-se da regra dos 70%).
+                * **Jornada do Cliente:** O CS conseguiu conectar a reunião atual com os passos anteriores e futuros, dando ao cliente uma visão clara de seu progresso e do que esperar a seguir?
+                * **Encantamento:** O CS criou algum momento "uau"? Ele superou as expectativas, ofereceu um insight inesperado ou personalizou a interação de forma a criar uma experiência memorável?
+                * **Objeções:** (Lembre-se da regra -1). Se houve objeções, o CS as contornou com empatia e dados, ou foi reativo e defensivo? Ele antecipou alguma objeção?
+                * **Rapport:** A conexão foi genuína ou forçada? O CS foi além do "bom dia" e demonstrou empatia, chamando todos pelos nomes e criando um ambiente de confiança?
+                * **Autoridade:** O CS conduziu a reunião com confiança e estabeleceu um ritmo adequado, ou pareceu passivo e inseguro? Ele inspirou confiança como um especialista?
+                * **Postura:** Câmera aberta, ambiente profissional, áudio claro. O CS demonstrou maturidade ao lidar com perguntas difíceis ou problemas?
+                * **Gestão de Tempo:** A reunião foi produtiva e focada? O CS validou a agenda e as prioridades com o cliente no início e soube gerir o tempo para cobrir o mais importante?
+                * **Contextualização:** O CS traduziu "features" em "benefícios" para o cliente? Ex: "Você usa a função X **para que** você economize Y horas no seu processo Z".
+                * **Clareza:** A comunicação foi simples, direta e livre de jargões? O CS usou diferentes formas (analogias, exemplos) para explicar o mesmo ponto quando necessário?
+                * **Objetividade:** O CS foi direto ao ponto ou divagou? As soluções apresentadas eram assertivas e resolviam diretamente a questão do cliente?
+                * **Flexibilidade:** O CS soube adaptar o roteiro para atender a uma necessidade urgente do cliente, ou se manteve rigidamente preso ao script?
+                * **Domínio de Produto:** O CS demonstrou conhecimento profundo, incluindo casos de uso avançados e boas práticas, ou apenas o conhecimento superficial?
+                * **Alinhamento ao Modelo de Negócio:** O discurso do CS refletiu a estratégia da empresa de construir uma parceria de longo prazo, ou foi puramente transacional?
+                * **Ecossistema Nibo:** O CS demonstrou como as diferentes ferramentas do Nibo se integram para gerar mais valor, ou tratou o produto de forma isolada?
+                * **Universo da Contabilidade:** O CS usou a linguagem e demonstrou conhecimento dos processos e dores do mundo contábil para criar uma conexão mais forte com o cliente?
+
+                ---
+                **TRANSCRIÇÃO PARA ANÁLISE:**
+                ---
+                ${combinedTranscript}
+                ---
                 `;
 
-                const schema = { type: "OBJECT", properties: { "notaGeral": { "type": "NUMBER" }, "evaluation": { type: "ARRAY", items: { type: "OBJECT", properties: { "criterio": { "type": "STRING" }, "nota": { "type": "NUMBER" }, "justificativa": { "type": "STRING" } }, required: ["criterio", "nota", "justificativa"] } }, "speakingTime": { type: "OBJECT", properties: { "cs": { "type": "NUMBER" }, "client": { "type": "NUMBER" } }, required: ["cs", "client"] }, "profileAnalysis": { type: "OBJECT", properties: { "profile": { "type": "STRING" }, "handling": { "type": "STRING" }, "suggestions": { "type": "STRING" } }, required: ["profile", "handling", "suggestions"] }, "summary": { type: "OBJECT", properties: { "geral": { "type": "STRING" }, "specificErrors": { "type": "ARRAY", "items": { "type": "STRING" } }, "sugestoes": { "type": "ARRAY", items: { "type": "STRING" } } }, required: ["geral", "specificErrors", "sugestoes"] }, "cancellationAlert": { type: "OBJECT", properties: { "risk": { "type": "BOOLEAN" }, "reason": { "type": "STRING" } }, required: ["risk", "reason"] }, "meetingHighlight": { "type": "STRING" }, "opportunities": { type: "ARRAY", items: { type: "OBJECT", properties: { "product": { "type": "STRING" }, "reason": { "type": "STRING" } }, required: ["product", "reason"] } } }, required: ["notaGeral", "evaluation", "speakingTime", "profileAnalysis", "summary", "cancellationAlert", "meetingHighlight", "opportunities"] };
+                // This schema defines the expected JSON structure for the AI's response.
+                const schema = { type: "OBJECT", properties: { "notaGeral": { "type": "NUMBER" }, "evaluation": { type: "ARRAY", items: { type: "OBJECT", properties: { "criterio": { "type": "STRING" }, "nota": { "type": "NUMBER" }, "justificativa": { "type": "STRING" } }, required: ["criterio", "nota", "justificativa"] } }, "speakingTime": { type: "OBJECT", properties: { "cs": { "type": "NUMBER" }, "client": { "type": "NUMBER" } }, required: ["cs", "client"] }, "profileAnalysis": { type: "OBJECT", properties: { "profile": { "type": "STRING" }, "handling": { "type": "STRING" }, "suggestions": { "type": "STRING" } }, required: ["profile", "handling", "suggestions"] }, "summary": { type: "OBJECT", properties: { "geral": { "type": "STRING" }, "specificErrors": { "type": "ARRAY", "items": { "type": "STRING" } }, "sugestoes": { "type": "ARRAY", items: { "type": "STRING" } } }, required: ["geral", "specificErrors", "sugestoes"] }, "cancellationAlert": { type: "OBJECT", properties: { "risk": { "type": "BOOLEAN" }, "reason": { "type": "STRING" } }, required: ["risk", "reason"] }, "meetingHighlight": { "type": "STRING" }, "opportunities": { type: "ARRAY", items: { "type": "OBJECT", properties: { "product": { "type": "STRING" }, "reason": { "type": "STRING" } }, required: ["product", "reason"] } } }, required: ["notaGeral", "evaluation", "speakingTime", "profileAnalysis", "summary", "cancellationAlert", "meetingHighlight", "opportunities"] };
                 const payload = { contents: [{ role: "user", parts: [{ text: evaluationPrompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema } };
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
@@ -326,12 +362,15 @@
             }
         }
 
+        // Function to display all results on the page
         function displayResults(data) {
             loadingSpinner.classList.add('hidden');
             
+            // Display each section of the report
             displayGeneralScore(data.notaGeral);
             displayCancellationAlert(data.cancellationAlert);
             
+            // Sort criteria for display, putting N/A at the bottom
             const sortedForDisplay = [...data.evaluation].sort((a, b) => (b.nota === -1 ? -Infinity : b.nota) - (a.nota === -1 ? -Infinity : a.nota));
 
             detailedReport.innerHTML = '<h3 class="text-xl font-semibold mb-4 text-center lg:text-left">Avaliação Detalhada</h3>';
@@ -345,7 +384,8 @@
                 const titleClass = isNotApplicable ? 'text-md font-semibold text-gray-500 line-through' : 'text-md font-semibold text-gray-800';
                 const justificationClass = isNotApplicable ? 'text-gray-400 line-through mt-2 pl-1 text-sm' : 'text-gray-600 mt-2 pl-1 text-sm';
                 
-                const scoreColor = item.nota >= 9 ? 'text-green-600' : item.nota >= 7 ? 'text-blue-600' : item.nota >= 5 ? 'text-yellow-600' : 'text-red-600';
+                // Determine score color based on value
+                const scoreColor = item.nota >= 8 ? 'text-green-600' : item.nota >= 6 ? 'text-blue-600' : item.nota >= 4 ? 'text-yellow-600' : 'text-red-600';
                 const scoreDisplay = isNotApplicable 
                     ? `<span class="text-gray-500 font-medium">N/A</span>` 
                     : `
@@ -365,11 +405,12 @@
                 detailedReport.appendChild(reportItem);
             });
 
+            // Filter out N/A criteria for the radar chart
             const radarData = data.evaluation.filter(item => item.nota !== -1);
             const radarLabels = radarData.map(item => item.criterio);
             const radarScores = radarData.map(item => item.nota);
 
-            if (radarChartInstance) radarChartInstance.destroy();
+            if (radarChartInstance) radarChartInstance.destroy(); // Destroy old chart instance
             radarChartInstance = new Chart(radarChartCanvas, {
                 type: 'radar',
                 data: { 
@@ -385,6 +426,7 @@
                 options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true, min: 0, max: 10, stepSize: 2 } }, plugins: { legend: { display: false } } }
             });
 
+            // Display remaining sections
             displaySpeakingTime(data.speakingTime);
             displayMeetingHighlight(data.meetingHighlight);
             displayOpportunities(data.opportunities);
@@ -395,8 +437,8 @@
 
         function displayGeneralScore(score) {
             if (score === null || isNaN(score)) return;
-            const scoreColor = score >= 9 ? 'text-green-600' : score >= 7 ? 'text-blue-600' : score >= 5 ? 'text-yellow-600' : 'text-red-600';
-            const scoreText = score >= 9 ? 'Excelente' : score >= 7 ? 'Muito Bom' : score >= 5 ? 'Razoável' : score >= 3 ? 'Fraco' : 'Insuficiente';
+            const scoreColor = score >= 8 ? 'text-green-600' : score >= 6 ? 'text-blue-600' : score >= 4 ? 'text-yellow-600' : 'text-red-600';
+            const scoreText = score >= 10 ? 'Excelente' : score >= 8 ? 'Cumpriu quase todas as vezes' : score >= 6 ? 'Fez o básico' : score >= 4 ? 'Cumpriu pouco' : score >= 2 ? 'Poucas vezes cumpriu' : 'Ruim';
             generalScoreSection.innerHTML = `
                 <div class="text-center bg-gray-50 p-4 rounded-lg">
                     <h3 class="text-xl font-semibold text-primary">Nota Geral da Reunião</h3>
