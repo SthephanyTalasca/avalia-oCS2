@@ -137,7 +137,8 @@
     </div>
 
     <script>
-        const apiKey = "AIzaSyAAc8LMjIbXz5BQiHhGVSdwjvZUT9vHo8A"; // Chave da API fica aqui
+        // ATENÇÃO: Insira a sua chave da API do Google AI Studio aqui.
+        const apiKey = "AIzaSyAAc8LMjIbXz5BQiHhGVSdwjvZUT9vHo8A"; 
 
         const csNameInput = document.getElementById('cs-name-input');
         const transcriptInput = document.getElementById('transcript-input');
@@ -257,6 +258,10 @@
             const readPromises = uploadedFiles.map(file => file.text());
 
             try {
+                if (apiKey === "SUA_CHAVE_DA_API_VEM_AQUI") {
+                    throw new Error("Por favor, insira uma chave de API válida no código-fonte (const apiKey).");
+                }
+
                 const fileTranscripts = await Promise.all(readPromises);
                 const allTranscripts = [manualTranscript, ...fileTranscripts].filter(Boolean);
                 const combinedTranscript = allTranscripts.join('\n\n---\n\n');
@@ -293,7 +298,7 @@
 
                 5.  **REGRA "ENCANTAMENTO É INDEPENDENTE":** A avaliação do critério 'Encantamento' não deve ser impactada pela presença ou ausência de objeções. Avalie-o com base na capacidade do CS de criar momentos "uau" e superar as expectativas.
 
-                6.  **PONTO DE ATENÇÃO CRÍTICO "ESCUTA ATIVA":** Se o percentual de fala do CS for **superior a 70%**, isso é uma falha grave. A nota de 'Escuta Ativa' deve ser automaticamente baixa (entre 1 e 3) e este ponto **DEVE** ser mencionado como o primeiro item nos "Pontos a Melhorar" do plano de ação.
+                6.  **PONTO DE ATENÇÃO "ESCUTA ATIVA":** O tempo de fala é um indicador chave. Se o percentual de fala do CS for **superior a 70%**, comece a descontar pontos da nota de Escuta Ativa (ex: -1 ponto a cada 10% acima do limite). Além disso, se o CS **interromper o cliente desnecessariamente e de forma intencional**, desconte pontos. Contudo, lembre-se que estes são apenas **fatores** da nota; a avaliação principal ainda é se o CS ouviu para entender, captou as entrelinhas e validou o entendimento.
 
                 7.  **PLANO DE AÇÃO OBRIGATÓRIO:** A análise **DEVE** conter um plano de ação claro. Identifique, no mínimo, **2-3 pontos de melhoria** (erros específicos cometidos) e **2-3 sugestões práticas** (ações claras que o CS pode tomar para melhorar).
 
@@ -306,14 +311,14 @@
                 ### **CRITÉRIOS DE AVALIAÇÃO DETALHADOS:**
 
                 * **Consultividade:** O CS agiu como um parceiro estratégico ou apenas como um apresentador de software? Ele fez perguntas investigativas para diagnosticar as dores do cliente antes de apresentar soluções?
-                * **Escuta Ativa:** O CS demonstrou ouvir para entender, ou apenas para responder? Ele captou as entrelinhas e as preocupações não ditas? (Lembre-se da regra dos 70%).
+                * **Escuta Ativa:** O CS demonstrou ouvir para entender, ou apenas para responder? Ele captou as entrelinhas e as preocupações não ditas? Avalie o impacto do tempo de fala e das interrupções conforme a regra #6.
                 * **Jornada do Cliente:** O CS conseguiu conectar a reunião atual com os passos anteriores e futuros, dando ao cliente uma visão clara de seu progresso e do que esperar a seguir?
                 * **Encantamento:** O CS criou algum momento "uau"? Ele superou as expectativas, ofereceu um insight inesperado ou personalizou a interação de forma a criar uma experiência memorável?
                 * **Objeções:** (Lembre-se da regra -1). Se houve objeções, o CS as contornou com empatia e dados, ou foi reativo e defensivo? Ele antecipou alguma objeção?
-                * **Rapport:** A conexão foi genuína ou forçada? O CS foi além do "bom dia" e demonstrou empatia, chamando todos pelos nomes e criando um ambiente de confiança?
+                * **Rapport:** A conexão foi genuína ou forçada? O CS foi além do "bom dia" e demonstrou empatia, chamando todos pelos nomes e criando um ambiente de confiança? 
                 * **Autoridade:** O CS conduziu a reunião com confiança e estabeleceu um ritmo adequado, ou pareceu passivo e inseguro? Ele inspirou confiança como um especialista?
                 * **Postura:** Câmera aberta, ambiente profissional, áudio claro. O CS demonstrou maturidade ao lidar com perguntas difíceis ou problemas?
-                * **Gestão de Tempo:** A reunião foi produtiva e focada? O CS validou a agenda e as prioridades com o cliente no início e soube gerir o tempo para cobrir o mais importante?
+                * **Gestão de Tempo:** Avalie a eficiência do tempo. Uma reunião de **1h a 1h15** bem conduzida é nota 10. Uma reunião **curta e eficaz (ex: 30 min)** também é nota 10. Contudo, se a reunião se arrastar desnecessariamente para **1h30 ou 2h**, a nota deve ser **drasticamente reduzida**. O foco é na produtividade dentro de um tempo razoável.
                 * **Contextualização:** O CS traduziu "features" em "benefícios" para o cliente? Ex: "Você usa a função X **para que** você economize Y horas no seu processo Z".
                 * **Clareza:** A comunicação foi simples, direta e livre de jargões? O CS usou diferentes formas (analogias, exemplos) para explicar o mesmo ponto quando necessário?
                 * **Objetividade:** O CS foi direto ao ponto ou divagou? As soluções apresentadas eram assertivas e resolviam diretamente a questão do cliente?
@@ -580,4 +585,3 @@
     </script>
 </body>
 </html>
-
